@@ -1,0 +1,27 @@
+{
+  "requirement_id": "ACC-REQ-001",
+  "requirement_text": "WHEN the lead vehicle is absent or travelling faster than the set speed, the ACC system shall maintain ego-vehicle speed within \u00b10.5 m/s of the driver-set speed V_set in steady-state conditions (settled after 5 s).",
+  "category": "speed_tracking",
+  "stimulus": {
+    "type": "steady_state",
+    "duration_s": 10,
+    "sample_time_s": 0.1,
+    "parameters": {
+      "v_set_mps": 20
+    }
+  },
+  "oracle": {
+    "type": "tolerance_band",
+    "evaluation_window_s": [
+      5,
+      10
+    ],
+    "signal": "v_ego",
+    "tolerance_mps": 0.5
+  },
+  "metadata": {
+    "generated_by": "groq/llama-3.3-70b-versatile",
+    "version": "1.0",
+    "notes": "Steady-state speed tracking test with lead absent or faster than set speed."
+  }
+}

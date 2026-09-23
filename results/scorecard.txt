@@ -1,0 +1,52 @@
+================================================================================
+TARGET-FITNESS SCORECARD — PoC-1 (MPC ACC Baseline)
+GenAI-Driven MIL Verification Framework  |  Option B: Shift-Left SIL
+================================================================================
+
+SECTION 1 — MIL TEST SUITE RESULTS  (float64 baseline)
+--------------------------------------------------------------------------------
+  Req ID          PASS/FAIL   Details
+--------------------------------------------------------------------------------
+  ACC-REQ-001     PASS        Steady‑state speed tracking test: lead vehicle set to 25.0 m/s (faster than V_set=20.0 m/s). After 5 s the ego speed should stay within ±0.5 m/s of V_set. Test passed.
+  ACC-REQ-002     PASS        Requirement ACC-REQ-002 passed: d_actual ≥ d_safe over the evaluation window (5‑15 s).
+  ACC-REQ-003     PASS        Computed D_safe = 10.0 + 1.4*V_ego. Tolerance band ±0.1 m over [0.0, 1.0] s.
+  ACC-REQ-004     PASS        Ego acceleration command remained within the required bounds [-3.0, 2.0] m/s².
+  ACC-REQ-005     PASS        ACC-REQ-005 evaluated over 2.0s with sample time 0.1s. Mode transition within 0.1 s after lead deceleration event was successful.
+--------------------------------------------------------------------------------
+  Summary: 5/5 requirements PASS at float64 baseline
+
+SECTION 2 — PRECISION DEGRADATION  (Ts = 0.10 s fixed)
+--------------------------------------------------------------------------------
+  Variant         RMS Spd Err  Max Spd Err  RMS Dst Err    Div@(s)  REQ-001  REQ-002  REQ-004  Mem(B)        Res
+--------------------------------------------------------------------------------
+  float64 (ref)        0.0000       0.0000       0.0000      never     PASS     PASS     PASS      48   1.00e-15
+  float32              0.0000       0.0000       0.0000      never     PASS     PASS     PASS      24   1.00e-06
+  fixed16              0.0009       0.0022       0.0040      never     PASS     PASS     PASS      12   3.91e-03
+  fixed8               8.7411      12.6919      18.3680       3.10     FAIL     FAIL     PASS       6   6.25e-02
+--------------------------------------------------------------------------------
+
+SECTION 3 — SAMPLE-TIME DEGRADATION  (dtype = float64 fixed)
+--------------------------------------------------------------------------------
+  Variant         RMS Spd Err  Max Spd Err  RMS Dst Err    Div@(s)  REQ-001  REQ-002  REQ-004  Mem(B)        Res
+--------------------------------------------------------------------------------
+  Ts=0.10s (ref)       0.0000       0.0000       0.0000      never     PASS     PASS     PASS      48   1.00e-15
+  Ts=0.20s             0.1667       0.2560       0.7664      never     PASS     PASS     PASS      48   1.00e-15
+  Ts=0.50s             0.6635       1.0138       3.0439       5.80     FAIL     PASS     PASS      48   1.00e-15
+--------------------------------------------------------------------------------
+
+SECTION 4 — TARGET-FITNESS VERDICT
+--------------------------------------------------------------------------------
+  Precision axis  → safe down to: fixed16
+  Precision axis  → fails at:     fixed8
+  Sample-time axis → safe up to:  Ts=0.20s
+  Sample-time axis → fails at:    Ts=0.50s
+
+  Static memory footprint (6 state vars):
+    float64    → 48 bytes
+    float32    → 24 bytes
+    fixed16    → 12 bytes
+    fixed8     → 6 bytes
+
+================================================================================
+End of Target-Fitness Scorecard
+================================================================================

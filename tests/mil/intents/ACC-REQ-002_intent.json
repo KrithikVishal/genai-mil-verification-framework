@@ -1,0 +1,31 @@
+{
+  "requirement_id": "ACC-REQ-002",
+  "requirement_text": "WHEN a lead vehicle is present and D_actual < D_safe, the ACC system shall reduce ego-vehicle speed so that D_actual >= D_safe within 3 s.",
+  "category": "safe_distance",
+  "stimulus": {
+    "type": "lead_deceleration",
+    "duration_s": 15.0,
+    "sample_time_s": 0.1,
+    "parameters": {
+      "v_set_mps": 30.0,
+      "v_lead_initial_mps": 30.0,
+      "v_lead_final_mps": 15.0,
+      "d_initial_m": 45.0,
+      "lead_decel_mps2": -3.0,
+      "event_time_s": 2.0
+    }
+  },
+  "oracle": {
+    "type": "lower_bound",
+    "signal": "d_actual",
+    "evaluation_window_s": [
+      5.0,
+      15.0
+    ],
+    "reference_signal": "d_safe"
+  },
+  "metadata": {
+    "generated_by": "fallback/deterministic",
+    "version": "1.0"
+  }
+}

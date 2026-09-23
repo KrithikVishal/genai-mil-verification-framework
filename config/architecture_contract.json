@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "architecture_contract.json",
+  "title": "GenAI Test-Intent",
+  "description": "Schema for a structured test intent generated from a formalized EARS requirement for the ACC MIL verification framework.",
+  "type": "object",
+  "required": [
+    "requirement_id",
+    "requirement_text",
+    "category",
+    "stimulus",
+    "oracle",
+    "metadata"
+  ],
+  "properties": {
+    "requirement_id": {
+      "type": "string",
+      "pattern": "^ACC-REQ-[0-9]{3}$",
+      "description": "Unique requirement identifier in format ACC-REQ-NNN"
+    },
+    "requirement_text": {
+      "type": "string",
+      "description": "Original EARS-syntax requirement text"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["speed_tracking", "safe_distance", "distance_formula", "acceleration_bounds", "mode_switch"],
+      "description": "Functional category of the requirement"
+    },
+    "stimulus": {
+      "type": "object",
+      "description": "Input scenario definition",
+      "required": ["type", "duration_s", "sample_time_s", "parameters"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["steady_state", "step_change", "lead_deceleration", "cut_in", "boundary_sweep"]
+        },
+        "duration_s": {"type": "number", "minimum": 0.5},
+        "sample_time_s": {"type": "number", "minimum": 0.01, "maximum": 1.0},
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "v_set_mps":          {"type": "number"},
+            "v_lead_initial_mps": {"type": "number"},
+            "v_lead_final_mps":   {"type": "number"},
+            "d_initial_m":        {"type": "number"},
+            "lead_decel_mps2":    {"type": "number"},
+            "event_time_s":       {"type": "number"}
+          }
+        }
+      }
+    },
+    "oracle": {
+      "type": "object",
+      "description": "Pass/fail evaluation criteria",
+      "required": ["type", "evaluation_window_s"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["tolerance_band", "lower_bound", "upper_bound", "exact_bound", "timing_constraint"]
+        },
+        "evaluation_window_s": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+        "signal":              {"type": "string", "enum": ["v_ego", "d_actual", "a_cmd", "mode", "d_safe"]},
+        "tolerance_mps":       {"type": "number", "minimum": 0},
+        "min_value":           {"type": "number"},
+        "max_value":           {"type": "number"},
+        "timing_tolerance_s":  {"type": "number", "minimum": 0},
+        "reference_signal":    {"type": "string"}
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["generated_by", "version"],
+      "properties": {
+        "generated_by": {"type": "string"},
+        "version":      {"type": "string"},
+        "notes":        {"type": "string"}
+      }
+    }
+  }
+}

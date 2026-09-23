@@ -1,0 +1,26 @@
+{
+  "requirement_id": "ACC-REQ-004",
+  "requirement_text": "Ego acceleration shall be constrained to [\u22123, 2] m/s\u00b2 at all times, regardless of controller mode or implementation.",
+  "category": "acceleration_bounds",
+  "stimulus": {
+    "type": "steady_state",
+    "duration_s": 5.0,
+    "sample_time_s": 0.1,
+    "parameters": {}
+  },
+  "oracle": {
+    "type": "tolerance_band",
+    "evaluation_window_s": [
+      0,
+      5
+    ],
+    "signal": "a_cmd",
+    "min_value": -3.0,
+    "max_value": 2.0
+  },
+  "metadata": {
+    "generated_by": "groq/llama-3.3-70b-versatile",
+    "version": "1.0",
+    "notes": "Unconditional acceleration limit test"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "requirement_id": "ACC-REQ-003",
+  "requirement_text": "The safe following distance shall be computed as D_safe = D_default + T_gap \u00d7 V_ego, where D_default = 10 m and T_gap = 1.4 s.",
+  "category": "distance_formula",
+  "stimulus": {
+    "type": "steady_state",
+    "duration_s": 1.0,
+    "sample_time_s": 0.1,
+    "parameters": {
+      "v_set_mps": 20.0
+    }
+  },
+  "oracle": {
+    "type": "tolerance_band",
+    "evaluation_window_s": [
+      0,
+      1
+    ],
+    "signal": "d_safe",
+    "tolerance_mps": 0.1
+  },
+  "metadata": {
+    "generated_by": "groq/llama-3.3-70b-versatile",
+    "version": "1.0",
+    "notes": "Unconditional requirement test for D_safe formula"
+  }
+}

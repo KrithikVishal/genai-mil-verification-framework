@@ -1,0 +1,31 @@
+{
+  "requirement_id": "ACC-REQ-005",
+  "requirement_text": "WHEN a lead-vehicle deceleration event would breach D_safe, the system shall switch to spacing-control mode within one sample period (T_s = 0.1 s).",
+  "category": "mode_switch",
+  "stimulus": {
+    "type": "lead_deceleration",
+    "duration_s": 2.0,
+    "sample_time_s": 0.1,
+    "parameters": {
+      "v_lead_initial_mps": 20.0,
+      "v_lead_final_mps": 5.0,
+      "d_initial_m": 30.0,
+      "lead_decel_mps2": -3.0,
+      "event_time_s": 0.5
+    }
+  },
+  "oracle": {
+    "type": "timing_constraint",
+    "evaluation_window_s": [
+      0.0,
+      0.1
+    ],
+    "signal": "mode",
+    "timing_tolerance_s": 0.0
+  },
+  "metadata": {
+    "generated_by": "groq/llama-3.3-70b-versatile",
+    "version": "1.0",
+    "notes": "Switch to spacing mode must occur within one sample period after lead deceleration event."
+  }
+}
