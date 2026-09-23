@@ -1,0 +1,34 @@
+================================================================================
+TARGET-FITNESS SCORECARD — PoC-1 (MPC ACC Baseline)  [MATLAB R2024a]
+GenAI-Driven MIL Verification Framework  |  Option B: Shift-Left SIL
+================================================================================
+
+SECTION 1 — PRECISION DEGRADATION  (Ts = 0.10 s fixed)
+--------------------------------------------------------------------------------
+Variant          RMS Spd Err  Max Spd Err  RMS Dst Err  Div@(s)  REQ-001  REQ-002  REQ-004  Mem(B)       Res
+--------------------------------------------------------------------------------
+float64 (ref)         0.0000       0.0000       0.0000    never     PASS     PASS     PASS      48  1.00e-15
+float32               0.0000       0.0000       0.0000    never     PASS     PASS     PASS      24  1.00e-06
+fixed16               0.0004       0.0011       0.0003    never     PASS     PASS     PASS      12  3.91e-03
+fixed8                8.7337      12.6794      18.3679     3.10     FAIL     FAIL     PASS       6  6.25e-02
+--------------------------------------------------------------------------------
+
+SECTION 2 — SAMPLE-TIME DEGRADATION  (dtype = float64 fixed)
+--------------------------------------------------------------------------------
+Variant          RMS Spd Err  Max Spd Err  RMS Dst Err  Div@(s)  REQ-001  REQ-002  REQ-004  Mem(B)       Res
+--------------------------------------------------------------------------------
+Ts=0.10s (ref)        0.0000       0.0000       0.0000    never     PASS     PASS     PASS      48  1.00e-15
+Ts=0.20s              0.1663       0.2560       0.7654    never     PASS     PASS     PASS      48  1.00e-15
+Ts=0.50s              0.6590       1.0138       3.0288     5.80     FAIL     PASS     PASS      48  1.00e-15
+--------------------------------------------------------------------------------
+
+SECTION 3 — TARGET-FITNESS VERDICT
+--------------------------------------------------------------------------------
+  Precision axis   -> safe down to: fixed16 (fails at: fixed8)
+  Sample-time axis -> safe up to:   Ts=0.20s (fails at: Ts=0.50s)
+  Static memory footprint (6 state vars):
+    float64    -> 48 bytes
+    float32    -> 24 bytes
+    fixed16    -> 12 bytes (75% reduction)
+    fixed8     -> 6 bytes
+================================================================================

@@ -302,10 +302,49 @@ def run_pipeline(args: argparse.Namespace) -> None:
     print(f"{'='*70}\n")
 
 
+def run_matlab_pipeline() -> None:
+    """Execute the PoC-1 verification pipeline directly in MATLAB R2024a."""
+    import shutil
+    import subprocess
+
+    matlab_bin = shutil.which("matlab")
+    if not matlab_bin:
+        candidates = [
+            Path("C:/Program Files/MATLAB/R2024a/bin/matlab.exe"),
+            Path("C:/Program Files/MATLAB/R2023b/bin/matlab.exe"),
+            Path("C:/Program Files/MATLAB/R2023a/bin/matlab.exe"),
+        ]
+        for c in candidates:
+            if c.exists():
+                matlab_bin = str(c)
+                break
+
+    if not matlab_bin:
+        print("ERROR: MATLAB executable could not be found in PATH or standard Program Files locations.")
+        sys.exit(1)
+
+    print(f"\n[MATLAB] Invoking MATLAB engine at: {matlab_bin}")
+    print("[MATLAB] Executing run_poc.m in batch mode...\n")
+
+    cmd = [matlab_bin, "-batch", "run_poc; exit"]
+    p = subprocess.Popen(cmd, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+    for line in iter(p.stdout.readline, ''):
+        print(line, end='', flush=True)
+    p.stdout.close()
+    return_code = p.wait()
+    if return_code != 0:
+        print(f"\n[MATLAB] Execution exited with error code {return_code}")
+        sys.exit(return_code)
+
+
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(
         description="PoC-1: GenAI-Driven MIL Verification Framework for ACC"
+    )
+    ap.add_argument(
+        "--matlab", action="store_true",
+        help="Run verification directly on real MATLAB engine (R2024a)"
     )
     ap.add_argument(
         "--no-llm", action="store_true",
@@ -320,4 +359,8 @@ if __name__ == "__main__":
         help="Comma-separated step numbers to run, e.g. '5,6,7' (default: all)"
     )
     args = ap.parse_args()
-    run_pipeline(args)
+
+    if args.matlab:
+        run_matlab_pipeline()
+    else:
+        run_pipeline(args)

@@ -84,12 +84,30 @@ GROQ_MODEL=openai/gpt-oss-120b
 
 ## Usage
 
-### Run the Complete 8-Step Pipeline
+### Run the Complete 8-Step Pipeline (Python)
 ```bash
 python run_poc.py
 ```
 
-### Additional Modes
+### Run on Real MATLAB Engine (R2024a)
+You can execute the entire verification suite and Option B Target-Fitness screening directly on real MATLAB:
+
+**Via Python CLI:**
+```bash
+python run_poc.py --matlab
+```
+*(Automatically locates your MATLAB installation, runs `run_poc.m` in batch mode, and streams results).*
+
+**Directly in MATLAB Desktop / CLI:**
+```matlab
+run_poc
+```
+or from the shell:
+```bash
+matlab -batch "run_poc; exit"
+```
+
+### Additional Python Pipeline Modes
 ```bash
 # Run in deterministic offline mode (no LLM calls)
 python run_poc.py --no-llm
