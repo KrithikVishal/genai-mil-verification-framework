@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous MIL Verification Engine — GenAI Test Loop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-monochrome">
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <div class="system-badge">
+        <span class="pulse-dot"></span>
+        <span class="mono-label">SYSTEM ONLINE // MATLAB R2024a</span>
+      </div>
+      <h1 class="system-title">AUTONOMOUS MIL VERIFICATION ENGINE</h1>
+      <span class="system-sub">GenAI Closed-Loop Test Generation & Self-Repair Architecture</span>
+    </div>
+
+    <div class="nav-right">
+      <div class="status-pill">
+        <span class="status-key">TARGET SUT:</span>
+        <span class="status-val mono">mpcACCsystem (MIL)</span>
+      </div>
+      <div class="status-pill">
+        <span class="status-key">AUTONOMY BUDGET:</span>
+        <span class="status-val mono" id="budget-pill">3 / 3 ITERATIONS</span>
+      </div>
+      <button id="btn-audit-toggle" class="btn btn-outline" title="View cryptographic audit trail and JSON logs">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        AUDIT LOG
+      </button>
+    </div>
+  </header>
+
+  <!-- Requirement & Iteration Selector Bar -->
+  <section class="control-bar">
+    <div class="control-group">
+      <label class="control-label">ACTIVE EARS REQUIREMENT</label>
+      <div class="req-tabs" id="req-tabs">
+        <button class="tab-btn active" data-req="ACC-REQ-001">
+          <span class="tab-id">ACC-REQ-001</span>
+          <span class="tab-desc">Speed Tracking (±0.5 m/s)</span>
+        </button>
+        <button class="tab-btn" data-req="ACC-REQ-002">
+          <span class="tab-id">ACC-REQ-002</span>
+          <span class="tab-desc">Safe Distance (Recovery &le; 3s)</span>
+        </button>
+        <button class="tab-btn" data-req="ACC-REQ-003">
+          <span class="tab-id">ACC-REQ-003</span>
+          <span class="tab-desc">Distance Formula (10m + 1.4s)</span>
+        </button>
+        <button class="tab-btn" data-req="ACC-REQ-004">
+          <span class="tab-id">ACC-REQ-004</span>
+          <span class="tab-desc">Acceleration Bounds ([-3, 2])</span>
+        </button>
+        <button class="tab-btn" data-req="ACC-REQ-005">
+          <span class="tab-id">ACC-REQ-005</span>
+          <span class="tab-desc">Mode Switch (&le; 0.1s)</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="control-group right-align">
+      <label class="control-label">LOOP ITERATION HISTORY</label>
+      <div class="iter-tabs" id="iter-tabs">
+        <button class="iter-btn" data-iter="1">
+          <span class="iter-badge">ITER 1</span>
+          <span class="iter-status">TRIVIAL (ADEQUATE)</span>
+        </button>
+        <button class="iter-btn" data-iter="2">
+          <span class="iter-badge">ITER 2</span>
+          <span class="iter-status">DEFECT DETECTED</span>
+        </button>
+        <button class="iter-btn active" data-iter="3">
+          <span class="iter-badge">ITER 3</span>
+          <span class="iter-status">REPAIRED (99% CONF)</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- The 9 Interactive Stages Pipeline -->
+  <section class="stage-pipeline-wrapper">
+    <div class="pipeline-header">
+      <div class="pipeline-title">
+        <span class="section-tag">CLOSED-LOOP PIPELINE</span>
+        <h2>END-TO-END AUTONOMOUS STAGES (1 &mdash; 9)</h2>
+      </div>
+      <div class="pipeline-actions">
+        <button id="btn-prev-stage" class="btn btn-sm btn-outline">&larr; PREV</button>
+        <button id="btn-play-loop" class="btn btn-sm btn-solid">
+          <span id="play-icon">&#9654;</span> AUTO-STEP
+        </button>
+        <button id="btn-next-stage" class="btn btn-sm btn-outline">NEXT &rarr;</button>
+      </div>
+    </div>
+
+    <!-- The 9 stage cards ribbon -->
+    <div class="stages-ribbon" id="stages-ribbon">
+      <div class="stage-step" data-stage="1">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-name">INGEST</div>
+          <div class="step-sub">EARS Ingestion</div>
+        </div>
+        <div class="step-status">VERIFIED</div>
+      </div>
+
+      <div class="stage-step" data-stage="2">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-name">PLAN</div>
+          <div class="step-sub">Scenario Strategy</div>
+        </div>
+        <div class="step-status">VALID</div>
+      </div>
+
+      <div class="stage-step" data-stage="3">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-name">GENERATE</div>
+          <div class="step-sub">Test Intent JSON</div>
+        </div>
+        <div class="step-status">TYPED</div>
+      </div>
+
+      <div class="stage-step" data-stage="4">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-name">CRITIQUE</div>
+          <div class="step-sub">Pre-Execution Gate</div>
+        </div>
+        <div class="step-status">PASSED</div>
+      </div>
+
+      <div class="stage-step" data-stage="5">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <div class="step-name">BUILD</div>
+          <div class="step-sub">Deterministic Adapter</div>
+        </div>
+        <div class="step-status">READY</div>
+      </div>
+
+      <div class="stage-step" data-stage="6">
+        <div class="step-num">06</div>
+        <div class="step-content">
+          <div class="step-name">EXECUTE</div>
+          <div class="step-sub">MATLAB Simulink</div>
+        </div>
+        <div class="step-status">SIMULATED</div>
+      </div>
+
+      <div class="stage-step" data-stage="7">
+        <div class="step-num">07</div>
+        <div class="step-content">
+          <div class="step-name">ANALYZE</div>
+          <div class="step-sub">Telemetry Evidence</div>
+        </div>
+        <div class="step-status">EXTRACTED</div>
+      </div>
+
+      <div class="stage-step" data-stage="8">
+        <div class="step-num">08</div>
+        <div class="step-content">
+          <div class="step-name">IMPROVE</div>
+          <div class="step-sub">Critic Self-Repair</div>
+        </div>
+        <div class="step-status">CONVERGED</div>
+      </div>
+
+      <div class="stage-step" data-stage="9">
+        <div class="step-num">09</div>
+        <div class="step-content">
+          <div class="step-name">FINALIZE</div>
+          <div class="step-sub">Scorecard & Hash</div>
+        </div>
+        <div class="step-status">STOPPED</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Dual-Panel Workspace -->
+  <main class="main-workspace">
+    <!-- Left Column: Active Stage Detailed Inspector -->
+    <div class="workspace-col col-stage-detail">
+      <div class="panel stage-inspector-panel">
+        <div class="panel-header">
+          <div class="stage-meta-header">
+            <span class="stage-badge-large" id="active-stage-num">STAGE 01</span>
+            <div class="stage-headings">
+              <h3 id="active-stage-title">INGESTION & EARS NORMALIZATION</h3>
+              <p class="mono-sub" id="active-stage-role">Contract Gateway: Raw Requirement &rarr; Normalized Schema</p>
+            </div>
+          </div>
+          <div class="panel-badges">
+            <span class="badge badge-mono" id="active-stage-engine">DETERMINISTIC</span>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <!-- Stage Mission / Narrative -->
+          <div class="info-block">
+            <div class="block-title">STAGE OBJECTIVE & ROLE IN LOOP</div>
+            <p id="active-stage-desc" class="block-text">
+              Normalizes the human or engineering requirement into a formal EARS structure. Identifies triggers, system responses, tolerances, and explicit numeric constraints before test synthesis.
+            </p>
+          </div>
+
+          <!-- Stage Inputs & Transformation -->
+          <div class="io-grid">
+            <div class="io-cell">
+              <div class="io-label">INPUT CONTRACT</div>
+              <div class="io-content mono" id="active-stage-input">
+                ACC-REQ-001 (Raw text)
+              </div>
+            </div>
+            <div class="io-cell">
+              <div class="io-label">OUTPUT CONTRACT</div>
+              <div class="io-content mono" id="active-stage-output">
+                Normalized EARS Object + Parsed Constraints
+              </div>
+            </div>
+          </div>
+
+          <!-- Code / Artifact Inspector Tabs -->
+          <div class="artifact-viewer">
+            <div class="viewer-tabs">
+              <button class="vtab-btn active" data-vtab="payload">STAGE PAYLOAD</button>
+              <button class="vtab-btn" data-vtab="contract">SCHEMA CONTRACT</button>
+              <button class="vtab-btn" data-vtab="diagnostics">DIAGNOSTICS & SAFETY</button>
+            </div>
+            <div class="viewer-content">
+              <pre class="code-block mono" id="stage-code-display">// Loading payload...</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Verification Telemetry & Verification Evidence -->
+    <div class="workspace-col col-telemetry">
+      <!-- Live Waveform & Oracle Chart -->
+      <div class="panel telemetry-panel">
+        <div class="panel-header">
+          <div class="chart-title-area">
+            <h3>SIMULATION TELEMETRY & ORACLE WINDOW</h3>
+            <span class="mono-sub" id="chart-sub">MATLAB R2024a PlantModel &middot; 30.0s Duration &middot; Ts = 0.1s</span>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-line line-vego"></span> V_ego (m/s)</span>
+            <span class="legend-item"><span class="legend-line line-vset"></span> V_set (m/s)</span>
+            <span class="legend-item"><span class="legend-line line-vlead"></span> V_lead (m/s)</span>
+            <span class="legend-item"><span class="legend-line line-window"></span> Oracle Window</span>
+          </div>
+        </div>
+
+        <div class="canvas-container">
+          <canvas id="telemetry-chart" width="800" height="280"></canvas>
+          <div id="chart-tooltip" class="chart-tooltip"></div>
+        </div>
+
+        <div class="telemetry-sub-bar">
+          <div class="time-scrubber">
+            <label class="scrub-label mono">SCRUB TIME: <span id="scrub-val">15.0s</span></label>
+            <input type="range" id="time-slider" min="0" max="30" step="0.1" value="15.0">
+          </div>
+          <div class="readout-strip">
+            <div class="readout-box">
+              <span class="r-label">V_EGO</span>
+              <span class="r-val mono" id="val-vego">20.01 m/s</span>
+            </div>
+            <div class="readout-box">
+              <span class="r-label">ERROR</span>
+              <span class="r-val mono" id="val-err">0.011 m/s</span>
+            </div>
+            <div class="readout-box">
+              <span class="r-label">GAP SURPLUS</span>
+              <span class="r-val mono" id="val-gap">+11.79 m</span>
+            </div>
+            <div class="readout-box">
+              <span class="r-label">ACCEL CMD</span>
+              <span class="r-val mono" id="val-accel">0.00 m/s²</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quantitative KPI Metric Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">MAX SPEED ERROR</div>
+          <div class="kpi-value mono" id="kpi-speed-err">0.011 m/s</div>
+          <div class="kpi-sub mono" id="kpi-speed-sub">Threshold: &le; 0.45 m/s (&check;)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">SETTLING TIME</div>
+          <div class="kpi-value mono" id="kpi-settle">4.2 s</div>
+          <div class="kpi-sub mono">EARS target: &le; 5.0 s (&check;)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">MIN GAP SURPLUS</div>
+          <div class="kpi-value mono" id="kpi-gap">+11.79 m</div>
+          <div class="kpi-sub mono">Safety condition: &ge; 0.0 m (&check;)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">CRITIC CONFIDENCE</div>
+          <div class="kpi-value mono" id="kpi-conf">99.0%</div>
+          <div class="kpi-sub mono" id="kpi-quality">Quality: GOOD (Converged)</div>
+        </div>
+      </div>
+
+      <!-- Critic Verdict & Iterative Repair Banner -->
+      <div class="panel critic-summary-panel">
+        <div class="panel-header">
+          <h3>EVALUATION & REPAIR DIAGNOSIS</h3>
+          <span class="badge badge-solid" id="critic-verdict-badge">VERDICT: PASS / GOOD</span>
+        </div>
+        <div class="panel-body">
+          <div class="critic-narrative" id="critic-narrative-text">
+            Iteration 3 successfully resolved the transient oracle window defect identified in Iteration 2. Speed error settles well within ±0.45 m/s, acceleration respects bounds, and all formal EARS clauses are satisfied.
+          </div>
+          <div class="repair-diff-preview" id="repair-diff-container">
+            <!-- Dynamic diff highlights -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Audit Trail & Traceability Drawer Modal -->
+  <div class="modal-overlay" id="audit-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="mono-label">TRACEABILITY MATRIX & REPRODUCIBILITY AUDIT</span>
+          <h3>FULL RUN ARTIFACT CHAIN (A1 &mdash; A10)</h3>
+        </div>
+        <button id="btn-close-modal" class="btn btn-outline">&times; CLOSE</button>
+      </div>
+      <div class="modal-body">
+        <div class="audit-summary-strip">
+          <div class="audit-stat">
+            <span class="stat-lbl">TOTAL RUNTIME</span>
+            <span class="stat-val mono">98.6 s (3 Iterations)</span>
+          </div>
+          <div class="audit-stat">
+            <span class="stat-lbl">MATLAB ENGINE</span>
+            <span class="stat-val mono">R2024a Update 8 (Batch)</span>
+          </div>
+          <div class="audit-stat">
+            <span class="stat-lbl">LLM ORCHESTRATOR</span>
+            <span class="stat-val mono">Groq LLaMA-3.3-70B</span>
+          </div>
+          <div class="audit-stat">
+            <span class="stat-lbl">FINAL VERDICT</span>
+            <span class="stat-val mono">PASS (Certified)</span>
+          </div>
+        </div>
+
+        <div class="audit-chain-tree" id="audit-chain-display">
+          <!-- Dynamically populated iteration trees -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="system-footer">
+    <div class="footer-left mono">
+      <span>GenAI-MIL-Verification-Framework</span> &middot;
+      <span>Option B: Shift-Left Hardware Screening</span> &middot;
+      <span>ISO 26262 Traceable</span>
+    </div>
+    <div class="footer-right mono">
+      <span>SHA256: 7f8c9b2...4e1d</span> &middot;
+      <span>STOPPING RULE: CONVERGED_CRITIC</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
