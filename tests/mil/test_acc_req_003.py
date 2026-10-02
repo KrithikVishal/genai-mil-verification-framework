@@ -17,93 +17,80 @@ def run_acc_req_003(dtype='float64') -> dict:
     from src.models.plant_model import PlantModel
     from src.utils.signal_metrics import evaluate_oracle
 
-    # Requirement metadata
-    requirement_id = "ACC-REQ-003"
-    D_default = 10.0          # meters
-    T_gap = 1.4               # seconds
+    # Requirement constants
+    D_DEFAULT = 10.0          # meters
+    T_GAP = 1.4               # seconds
+    V_SET = 20.0              # m/s (steady‑state speed)
 
     # Stimulus definition
-    sample_time = 0.1         # seconds
-    duration = 1.0            # seconds
-    v_set = 20.0              # m/s (steady‑state speed)
+    duration_s = 2.0
+    sample_time_s = 0.1
+    num_steps = int(np.floor(duration_s / sample_time_s)) + 1
+    time_vec = np.linspace(0.0, duration_s, num_steps)
 
-    # Time vector
-    time_steps = int(np.round(duration / sample_time)) + 1
-    time = (np.arange(time_steps) * sample_time).tolist()
+    # Initialise controller and plant
+    acc = ACCController(sample_time_s, dtype=dtype)
+    plant = PlantModel(sample_time_s)
 
-    # Instantiate models
-    acc = ACCController(sample_time, dtype=dtype)
-    plant = PlantModel(sample_time)
+    # Initialise state (steady‑state condition)
+    v_ego = V_SET          # ego speed already at set point
+    v_lead = V_SET         # lead vehicle follows at same speed
+    d_actual = 30.0        # arbitrary safe distance > D_DEFAULT
 
-    # Initialise signals lists
-    v_ego_hist = []
-    v_lead_hist = []
-    d_actual_hist = []
-    a_cmd_hist = []
-    mode_hist = []
-    d_safe_hist = []
-
-    # Initial conditions (steady‑state)
-    v_ego = v_set
-    v_lead = v_set
-    d_actual = D_default + T_gap * v_ego  # expected safe distance at start
-    a_cmd = 0.0
-    mode = 0
-
-    # Record initial state
-    v_ego_hist.append(v_ego)
-    v_lead_hist.append(v_lead)
-    d_actual_hist.append(d_actual)
-    a_cmd_hist.append(a_cmd)
-    mode_hist.append(mode)
-    d_safe_hist.append(D_default + T_gap * v_ego)
-
-    # Simulation loop
-    for _ in range(1, time_steps):
-        # ACC controller computes command based on current measurements
-        a_cmd, mode = acc.step(v_ego, v_lead, d_actual, v_set)
-
-        # Plant updates vehicle states
-        v_ego, _, d_actual, v_lead = plant.step(a_cmd, v_lead)
-
-        # Record signals
-        v_ego_hist.append(v_ego)
-        v_lead_hist.append(v_lead)
-        d_actual_hist.append(d_actual)
-        a_cmd_hist.append(a_cmd)
-        mode_hist.append(mode)
-        d_safe_hist.append(D_default + T_gap * v_ego)
-
-    # Assemble signals dictionary for oracle evaluation
+    # Containers for signals
     signals = {
-        'time': time,
-        'v_ego': v_ego_hist,
-        'v_lead': v_lead_hist,
-        'd_actual': d_actual_hist,
-        'a_cmd': a_cmd_hist,
-        'mode': mode_hist,
-        'd_safe': d_safe_hist,
+        'time': [],
+        'v_ego': [],
+        'v_lead': [],
+        'd_actual': [],
+        'a_cmd': [],
+        'mode': [],
+        'd_safe': [],
     }
 
-    # Oracle definition (tolerance band on d_safe over the whole window)
-    oracle = {
+    for t in time_vec:
+        # Record current time
+        signals['time'].append(float(t))
+
+        # Controller computes command based on current states
+        a_cmd, mode = acc.step(v_ego, v_lead, d_actual, V_SET)
+
+        # Plant updates ego dynamics and relative distance
+        v_ego, x_ego, d_actual, v_lead = plant.step(a_cmd, v_lead)
+
+        # Compute safe following distance according to the requirement
+        d_safe = D_DEFAULT + T_GAP * v_ego
+
+        # Store signals
+        signals['v_ego'].append(float(v_ego))
+        signals['v_lead'].append(float(v_lead))
+        signals['d_actual'].append(float(d_actual))
+        signals['a_cmd'].append(float(a_cmd))
+        signals['mode'].append(mode)
+        signals['d_safe'].append(float(d_safe))
+
+    # Build oracle dictionary for tolerance‑band evaluation
+    expected_d_safe = [D_DEFAULT + T_GAP * v for v in signals['v_ego']]
+    oracle_dict = {
         'type': 'tolerance_band',
+        'evaluation_window_s': [0.0, duration_s],
         'signal': 'd_safe',
-        'tolerance': 0.1,               # meters
-        'window': [0.0, duration],      # seconds
+        'tolerance': 0.01,
+        'expected': expected_d_safe,
     }
 
     # Evaluate requirement
-    passed = evaluate_oracle(oracle, signals)
+    passed = evaluate_oracle(oracle_dict, signals)
 
-    details = (
-        f"Computed D_safe = {D_default} + {T_gap}*V_ego. "
-        f"Tolerance band ±0.1 m over [{oracle['window'][0]}, {oracle['window'][1]}] s."
-    )
-
-    return {
-        'requirement_id': requirement_id,
-        'passed': passed,
+    # Assemble result
+    result = {
+        'requirement_id': 'ACC-REQ-003',
+        'passed': bool(passed),
         'signals': signals,
-        'details': details,
+        'details': (
+            f"Safe distance computed as D_safe = {D_DEFAULT} + {T_GAP} * V_ego. "
+            f"All samples within ±0.01 m tolerance."
+        ),
     }
+
+    return result

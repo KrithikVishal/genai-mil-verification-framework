@@ -1,0 +1,82 @@
+{
+  "test_id": "ACC-REQ-001-T1-I2",
+  "requirement_id": "ACC-REQ-001",
+  "test_objective": "Verify that ACC brings ego speed within \u00b10.45\u202fm/s of the driver-set speed and maintains a safe distance after the lead vehicle disappears, while respecting acceleration limits.",
+  "stimulus": {
+    "scenario_type": "step_change",
+    "initial_conditions": {
+      "v_ego_init_mps": 15.0,
+      "v_lead_init_mps": 20.0,
+      "d_init_m": 40.0,
+      "v_set_mps": 20.0
+    },
+    "events": [
+      {
+        "time_s": 5.0,
+        "type": "lead_absent"
+      }
+    ]
+  },
+  "observed_signals": [
+    "v_ego",
+    "v_lead",
+    "d_actual",
+    "d_safe",
+    "a_cmd",
+    "mode"
+  ],
+  "derived_metrics": [
+    {
+      "name": "speed_error",
+      "formula": "abs(v_ego - v_set)",
+      "unit": "m/s"
+    },
+    {
+      "name": "gap_surplus",
+      "formula": "d_actual - d_safe",
+      "unit": "m"
+    }
+  ],
+  "oracle": {
+    "type": "threshold",
+    "evaluation_window_start_s": 5.0,
+    "evaluation_window_end_s": 30.0,
+    "conditions": [
+      {
+        "signal": "speed_error",
+        "operator": "<=",
+        "threshold": 0.45
+      },
+      {
+        "signal": "gap_surplus",
+        "operator": ">=",
+        "threshold": 0.0
+      },
+      {
+        "signal": "a_cmd",
+        "operator": ">=",
+        "threshold": -3.0
+      },
+      {
+        "signal": "a_cmd",
+        "operator": "<=",
+        "threshold": 2.0
+      },
+      {
+        "signal": "mode",
+        "operator": "==",
+        "threshold": 1.0
+      }
+    ]
+  },
+  "duration_s": 30.0,
+  "sample_time_s": 0.1,
+  "assumptions": [
+    "Lead vehicle maintains constant speed equal to V_set for the first 5\u202fs.",
+    "Vehicle dynamics follow nominal parameters (mass \u22481500\u202fkg, no external disturbances).",
+    "Driver-set speed remains constant throughout the test."
+  ],
+  "rationale": "The test starts with ego speed 5\u202fm/s below the set speed, creating a speed error that the ACC must correct. After 5\u202fs the lead vehicle disappears, forcing the controller to transition to free\u2011running mode while preserving the safe distance defined by D_safe = 10 + 1.4\u00b7v_ego. Observing distance\u2011related signals and adding gap_surplus and acceleration bounds ensures verification of both speed\u2011tracking and distance\u2011keeping requirements under a dynamic scenario.",
+  "iteration": 2,
+  "generated_by": "groq/llama-3.3-70b-versatile"
+}

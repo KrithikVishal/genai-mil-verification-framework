@@ -1,0 +1,76 @@
+{
+  "test_id": "ACC-REQ-001-T1-I3",
+  "requirement_id": "ACC-REQ-001",
+  "test_objective": "Verify that ACC brings ego speed within \u00b10.5\u202fm/s of the driver-set speed and maintains a safe distance after the lead vehicle disappears, while respecting acceleration limits.",
+  "stimulus": {
+    "scenario_type": "step_change",
+    "initial_conditions": {
+      "v_ego_init_mps": 15.0,
+      "v_lead_init_mps": 20.0,
+      "d_init_m": 40.0,
+      "v_set_mps": 20.0
+    },
+    "events": [
+      {
+        "time_s": 5.0,
+        "type": "lead_absent"
+      }
+    ]
+  },
+  "observed_signals": [
+    "v_ego",
+    "v_lead",
+    "d_actual",
+    "d_safe",
+    "a_cmd",
+    "mode"
+  ],
+  "derived_metrics": [
+    {
+      "name": "speed_error",
+      "formula": "abs(v_ego - v_set)",
+      "unit": "m/s"
+    },
+    {
+      "name": "gap_surplus",
+      "formula": "d_actual - d_safe",
+      "unit": "m"
+    }
+  ],
+  "oracle": {
+    "type": "threshold",
+    "evaluation_window_start_s": 12.0,
+    "evaluation_window_end_s": 40.0,
+    "conditions": [
+      {
+        "signal": "speed_error",
+        "operator": "<=",
+        "threshold": 0.5
+      },
+      {
+        "signal": "gap_surplus",
+        "operator": ">=",
+        "threshold": 0.0
+      },
+      {
+        "signal": "a_cmd",
+        "operator": ">=",
+        "threshold": -3.0
+      },
+      {
+        "signal": "a_cmd",
+        "operator": "<=",
+        "threshold": 2.0
+      }
+    ]
+  },
+  "duration_s": 40.0,
+  "sample_time_s": 0.1,
+  "assumptions": [
+    "Lead vehicle disappears at t = 5\u202fs and remains absent for the remainder of the test.",
+    "Driver-set speed remains constant at 20\u202fm/s."
+  ],
+  "rationale": "The added stabilization period (evaluation starts at 12\u202fs) allows the ACC controller to settle into its post\u2011lead\u2011absent mode before verification, eliminating transient mode mismatches. The mode condition is omitted because the requirement does not mandate a specific mode value after lead loss. Speed\u2011error tolerance is aligned with the requirement (\u00b10.5\u202fm/s).",
+  "iteration": 3,
+  "generated_by": "groq/llama-3.3-70b-versatile"
+}

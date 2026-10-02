@@ -1,0 +1,59 @@
+{
+  "test_id": "ACC-REQ-001-T1-I1",
+  "requirement_id": "ACC-REQ-001",
+  "test_objective": "Verify that ACC maintains ego speed within \u00b10.5\u202fm/s of the driver-set speed when the lead vehicle is absent or faster, after a 5\u202fs settling period.",
+  "stimulus": {
+    "scenario_type": "steady_state",
+    "initial_conditions": {
+      "v_ego_init_mps": 20.0,
+      "v_lead_init_mps": 30.0,
+      "d_init_m": 50.0,
+      "v_set_mps": 20.0
+    },
+    "events": [
+      {
+        "time_s": 0.0,
+        "type": "lead_absent"
+      }
+    ]
+  },
+  "observed_signals": [
+    "v_ego",
+    "a_cmd",
+    "mode"
+  ],
+  "derived_metrics": [
+    {
+      "name": "speed_error",
+      "formula": "abs(v_ego - v_set)",
+      "unit": "m/s"
+    },
+    {
+      "name": "gap_surplus",
+      "formula": "d_actual - d_safe",
+      "unit": "m"
+    }
+  ],
+  "oracle": {
+    "type": "threshold",
+    "evaluation_window_start_s": 5.0,
+    "evaluation_window_end_s": 20.0,
+    "conditions": [
+      {
+        "signal": "speed_error",
+        "operator": "<=",
+        "threshold": 0.5
+      }
+    ]
+  },
+  "duration_s": 20.0,
+  "sample_time_s": 0.1,
+  "assumptions": [
+    "Lead vehicle is absent for the entire test duration",
+    "Driver-set speed remains constant at 20\u202fm/s",
+    "Road is straight, level, and free of curvature"
+  ],
+  "rationale": "By removing the lead vehicle at time zero, the ACC controller operates in a steady\u2011state cruise mode. After the 5\u202fs settling period the test checks that the ego speed error stays within the \u00b10.5\u202fm/s tolerance, confirming compliance with the requirement.",
+  "iteration": 1,
+  "generated_by": "groq/llama-3.3-70b-versatile"
+}

@@ -1,0 +1,64 @@
+======================================================================
+  MVP VERIFICATION SCORECARD
+  Generated : 2026-10-02T09:12:39Z
+======================================================================
+
+  Requirement : ACC-REQ-001
+  Text        : WHEN the lead vehicle is absent or travelling faster than the set speed, the ACC system shall mainta...
+
+  FINAL VERDICT   : ✅ PASS
+  Iterations run  : 3
+  Test quality    : GOOD
+  Confidence      : 99%
+  Stopped because : Max iterations (3) reached.
+
+----------------------------------------------------------------------
+  ITERATION HISTORY
+----------------------------------------------------------------------
+  [1] ACC-REQ-001-T1-I1
+       Verdict : PASS   Quality : ADEQUATE
+       max_speed_error_mps = 0
+       rms_speed_error_mps = 0
+       min_gap_surplus_m = 62
+       a_cmd_min_mps2 = 0
+       a_cmd_max_mps2 = 0
+       Gaps:
+         ⚠ Neither d_safe, d_actual, nor gap_surplus is in observed_signals or oracle — safe-distance oracle is untestable.
+         ⚠ Speed error is near zero throughout — initial conditions may be too close to steady state. Consider starting further from set-point.
+       Critic weaknesses:
+         • Safe‑distance signals (d_safe, d_actual, gap_surplus) are not observed nor checked, leaving distance‑keeping unverified.
+         • Initial conditions place ego speed exactly at V_set, resulting in zero speed error and no stress on the controller.
+         • The test does not exercise a transition from a non‑steady state, limiting confidence in the ±0.5 m/s bound under dynamic conditions.
+
+  [2] ACC-REQ-001-T1-I2
+       Verdict : FAIL   Quality : ADEQUATE
+       max_speed_error_mps                 = 0.3978
+       rms_speed_error_mps                 = 0.0806
+       min_gap_surplus_m                   = 11.6011
+       a_cmd_min_mps2                      = 0.0000
+       a_cmd_max_mps2 = 2
+       Critic weaknesses:
+         • Mode condition failed despite measured value matching threshold, indicating a possible oracle definition or type‑mismatch issue.
+         • Evaluation window starts exactly at the lead‑absent event (5 s), capturing the transient mode change rather than steady‑state behavior.
+         • Oracle is stricter than the requirement for speed error (0.45 m/s vs ±0.5 m/s) but this is not the cause of failure; the stricter mode check is.
+
+  [3] ACC-REQ-001-T1-I3
+       Verdict : PASS   Quality : GOOD
+       max_speed_error_mps                 = 0.0110
+       rms_speed_error_mps                 = 0.0021
+       min_gap_surplus_m                   = 11.7945
+       a_cmd_min_mps2                      = 0.0000
+       a_cmd_max_mps2 = 2
+
+----------------------------------------------------------------------
+  MVP ACCEPTANCE CRITERIA CHECKLIST
+----------------------------------------------------------------------
+  A1 Loop generates test intent from requirement    : ✅
+  A2 Final execution verdict is determined          : ✅  (PASS)
+  A3 Multi-iteration improvement observed           : ✅  (3 iter)
+  A4 MATLAB simulation is the execution engine      : ✅
+  A5 No simulation crashes                          : ✅
+  A6 Acceleration bounds verified                   : ✅
+  A8 Scorecard written with per-iteration history   : ✅
+
+======================================================================

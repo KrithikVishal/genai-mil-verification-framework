@@ -12,26 +12,25 @@ from src.models.plant_model import PlantModel
 from src.utils.signal_metrics import evaluate_oracle
 
 def run_acc_req_004(dtype='float64') -> dict:
-    import numpy as np
-    from src.models.acc_controller import ACCController
-    from src.models.plant_model import PlantModel
-    from src.utils.signal_metrics import evaluate_oracle
-
+    # Requirement metadata
     requirement_id = "ACC-REQ-004"
-    sample_time = 0.1
-    duration = 5.0
-    steps = int(duration / sample_time) + 1
 
-    # Initial steady‑state conditions
-    v_ego = 20.0          # m/s
-    v_lead = 25.0         # m/s
-    d_actual = 30.0       # m
-    v_set = 22.0          # m/s (desired speed)
+    # Simulation parameters from stimulus
+    duration_s = 5.0
+    sample_time_s = 0.1
+    times = np.arange(0.0, duration_s + sample_time_s, sample_time_s, dtype=dtype)
 
-    ctrl = ACCController(sample_time, dtype=dtype)
-    plant = PlantModel(sample_time)
+    # Initialize controller and plant
+    controller = ACCController(sample_time_s, dtype=dtype)
+    plant = PlantModel(sample_time_s)
 
-    time = []
+    # Steady‑state stimulus values (chosen reasonable constants)
+    v_set = 20.0          # desired speed [m/s]
+    v_ego = 20.0          # initial ego speed [m/s]
+    v_lead = 20.0         # initial lead speed [m/s]
+    d_actual = 30.0       # initial gap [m]
+
+    # Containers for signals
     v_ego_hist = []
     v_lead_hist = []
     d_actual_hist = []
@@ -39,29 +38,28 @@ def run_acc_req_004(dtype='float64') -> dict:
     mode_hist = []
     d_safe_hist = []
 
-    for i in range(steps):
-        t = i * sample_time
-        time.append(t)
+    # Run simulation
+    for t in times:
+        # Controller computes command based on current states
+        a_cmd, mode = controller.step(v_ego, v_lead, d_actual, v_set)
 
-        # Controller computes acceleration command and mode
-        a_cmd, mode = ctrl.step(v_ego, v_lead, d_actual, v_set)
-
-        # Plant updates ego state based on command and lead vehicle dynamics
+        # Plant updates ego state using the command and lead speed
         v_ego, x_ego, d_actual, v_lead = plant.step(a_cmd, v_lead)
 
+        # Simple safe‑distance estimate (placeholder for illustration)
+        d_safe = v_ego * 2.0 + 5.0
+
         # Record signals
-        v_ego_hist.append(v_ego)
-        v_lead_hist.append(v_lead)
-        d_actual_hist.append(d_actual)
-        a_cmd_hist.append(a_cmd)
-        mode_hist.append(mode)
+        v_ego_hist.append(float(v_ego))
+        v_lead_hist.append(float(v_lead))
+        d_actual_hist.append(float(d_actual))
+        a_cmd_hist.append(float(a_cmd))
+        mode_hist.append(int(mode))
+        d_safe_hist.append(float(d_safe))
 
-        # Simple safe‑distance estimate (e.g., 2‑second rule) for completeness
-        d_safe = max(0.0, v_ego * 2.0)
-        d_safe_hist.append(d_safe)
-
+    # Build signals dictionary for oracle evaluation
     signals = {
-        'time': time,
+        'time': times.tolist(),
         'v_ego': v_ego_hist,
         'v_lead': v_lead_hist,
         'd_actual': d_actual_hist,
@@ -70,24 +68,26 @@ def run_acc_req_004(dtype='float64') -> dict:
         'd_safe': d_safe_hist,
     }
 
+    # Oracle definition (lower and upper bound on a_cmd)
     oracle = {
-        'type': 'tolerance_band',
-        'evaluation_window_s': [0, 5],
+        'type': 'lower_bound',
+        'evaluation_window_s': [0.0, duration_s],
         'signal': 'a_cmd',
         'min_value': -3.0,
         'max_value': 2.0,
     }
 
+    # Evaluate requirement
     passed = evaluate_oracle(oracle, signals)
 
     details = (
-        f"Ego acceleration command remained within the required bounds "
-        f"[{oracle['min_value']}, {oracle['max_value']}] m/s²."
+        f"Acceleration command bounded between -3 and 2 m/s²: "
+        f"{'PASS' if passed else 'FAIL'}."
     )
 
     return {
         'requirement_id': requirement_id,
-        'passed': passed,
+        'passed': bool(passed),
         'signals': signals,
         'details': details,
     }

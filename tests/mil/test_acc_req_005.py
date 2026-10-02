@@ -17,29 +17,30 @@ def run_acc_req_005(dtype='float64') -> dict:
     from src.models.plant_model import PlantModel
     from src.utils.signal_metrics import evaluate_oracle
 
-    # Test parameters
-    sample_time = 0.1
-    total_time = 2.0
-    steps = int(total_time / sample_time) + 1
+    # Requirement metadata
+    requirement_id = "ACC-REQ-005"
 
-    # Stimulus definition
-    v_lead_initial = 20.0          # m/s
-    v_lead_final = 5.0             # m/s (target, may not be reached)
-    lead_decel = -3.0              # m/s^2
-    event_time = 0.5               # s, when deceleration starts
-    d_initial = 30.0               # m
-    v_ego_initial = 20.0           # m/s (also the set speed)
-    v_set = 20.0                   # m/s
+    # Simulation parameters from stimulus
+    Ts = 0.1  # sample time [s]
+    total_time = 10.0
+    steps = int(total_time / Ts) + 1
 
-    # Helper to compute lead speed at a given time
-    def lead_speed(t):
-        if t < event_time:
-            return v_lead_initial
-        # time since deceleration began
-        dt = t - event_time
-        v = v_lead_initial + lead_decel * dt
-        # do not go below the specified final speed
-        return max(v, v_lead_final)
+    # Stimulus specifics
+    v_set = 30.0                     # desired ego speed [m/s]
+    v_lead_initial = 30.0            # lead initial speed [m/s]
+    v_lead_final = 10.0              # lead final speed (not directly used)
+    d_initial = 42.0                 # initial distance [m]
+    lead_decel = -4.0                # lead deceleration [m/s^2]
+    event_time = 1.0                 # time when deceleration starts [s]
+
+    # Initialize controller and plant
+    controller = ACCController(sample_time_s=Ts, dtype=dtype)
+    plant = PlantModel(sample_time_s=Ts)
+
+    # Initial states
+    v_ego = v_set                     # start ego at set speed
+    v_lead = v_lead_initial
+    d_actual = d_initial
 
     # Containers for signals
     time_hist = []
@@ -50,49 +51,39 @@ def run_acc_req_005(dtype='float64') -> dict:
     mode_hist = []
     d_safe_hist = []
 
-    # Initialise models
-    acc = ACCController(sample_time, dtype=dtype)
-    plant = PlantModel(sample_time)
+    for step in range(steps):
+        t = step * Ts
+        # Determine lead acceleration (deceleration event)
+        a_lead = lead_decel if t >= event_time else 0.0
 
-    # Initial states
-    v_ego = v_ego_initial
-    d_actual = d_initial
-    v_lead = lead_speed(0.0)
+        # Compute a safe distance (simple time‑gap model, 2 s gap, min 5 m)
+        d_safe = max(5.0, v_ego * 2.0)
 
-    for i in range(steps):
-        t = i * sample_time
+        # Controller computes command based on current measurements
+        a_cmd, mode = controller.step(v_ego, v_lead, d_actual, v_set)
 
-        # Record current time
+        # Record signals for this sample
         time_hist.append(t)
+        v_ego_hist.append(v_ego)
+        v_lead_hist.append(v_lead)
+        d_actual_hist.append(d_actual)
+        a_cmd_hist.append(a_cmd)
+        mode_hist.append(mode)
+        d_safe_hist.append(d_safe)
 
-        # Controller step
-        a_cmd, mode = acc.step(v_ego, v_lead, d_actual, v_set)
+        # Plant updates states using the commanded acceleration and lead dynamics
+        # Lead vehicle dynamics are injected via its acceleration
+        # The PlantModel interface does not accept lead acceleration directly,
+        # so we manually integrate the lead speed for the next step.
+        v_lead_next = max(0.0, v_lead + a_lead * Ts)
 
-        # Record controller outputs
-        a_cmd_hist.append(float(a_cmd))
-        mode_hist.append(str(mode))
+        # Plant step returns updated ego state and the (already updated) lead speed
+        v_ego, _, d_actual, v_lead = plant.step(a_cmd, v_lead_next)
 
-        # Simple safe distance estimate (placeholder)
-        d_safe = v_ego * 2.0 + 5.0
-        d_safe_hist.append(float(d_safe))
-
-        # Plant step (ego dynamics)
-        v_ego_next, x_ego, d_actual_next, _ = plant.step(a_cmd, v_lead)
-
-        # Update lead speed according to the prescribed deceleration profile
-        v_lead_next = lead_speed(t + sample_time)
-
-        # Record signals after plant update
-        v_ego_hist.append(float(v_ego_next))
-        v_lead_hist.append(float(v_lead_next))
-        d_actual_hist.append(float(d_actual_next))
-
-        # Prepare for next iteration
-        v_ego = v_ego_next
-        d_actual = d_actual_next
+        # Ensure the lead speed used for the next iteration matches our manual integration
         v_lead = v_lead_next
 
-    # Build signals dictionary
+    # Assemble signals dictionary for oracle evaluation
     signals = {
         'time': time_hist,
         'v_ego': v_ego_hist,
@@ -103,28 +94,25 @@ def run_acc_req_005(dtype='float64') -> dict:
         'd_safe': d_safe_hist,
     }
 
-    # Oracle definition (timing constraint on mode change)
+    # Oracle definition (timing constraint on mode switch)
     oracle = {
         'type': 'timing_constraint',
-        'evaluation_window_s': [0.0, 0.1],
         'signal': 'mode',
-        'timing_tolerance_s': 0.0,
-        # The evaluation window is interpreted relative to the event time;
-        # the harness is expected to align it accordingly.
+        'evaluation_window_s': [1.0, 5.0],
+        'timing_tolerance_s': 0.1,
     }
 
-    # Evaluate requirement
+    # Evaluate the requirement
     passed = evaluate_oracle(oracle, signals)
 
     details = (
-        f"ACC-REQ-005 evaluated over {total_time}s with sample time {sample_time}s. "
-        f"Mode transition within 0.1 s after lead deceleration event was "
-        f"{'successful' if passed else 'unsuccessful'}."
+        f"Requirement {requirement_id} evaluated over {total_time}s. "
+        f"Mode switch timing constraint {'met' if passed else 'violated'}."
     )
 
     return {
-        'requirement_id': 'ACC-REQ-005',
-        'passed': bool(passed),
+        'requirement_id': requirement_id,
+        'passed': passed,
         'signals': signals,
         'details': details,
     }

@@ -4,24 +4,23 @@
   "category": "speed_tracking",
   "stimulus": {
     "type": "steady_state",
-    "duration_s": 10,
+    "duration_s": 10.0,
     "sample_time_s": 0.1,
     "parameters": {
-      "v_set_mps": 20
+      "v_set_mps": 20.0
     }
   },
   "oracle": {
     "type": "tolerance_band",
     "evaluation_window_s": [
-      5,
-      10
+      5.0,
+      10.0
     ],
     "signal": "v_ego",
     "tolerance_mps": 0.5
   },
   "metadata": {
     "generated_by": "groq/llama-3.3-70b-versatile",
-    "version": "1.0",
-    "notes": "Steady-state speed tracking test with lead absent or faster than set speed."
+    "version": "1.0"
   }
 }

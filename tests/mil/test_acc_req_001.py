@@ -17,43 +17,52 @@ def run_acc_req_001(dtype='float64') -> dict:
     from src.models.plant_model import PlantModel
     from src.utils.signal_metrics import evaluate_oracle
 
-    # Test parameters
-    requirement_id = "ACC-REQ-001"
-    duration_s = 10.0
+    # ----------------------------------------------------------------------
+    # Simulation configuration (derived from the test intent)
+    # ----------------------------------------------------------------------
     sample_time_s = 0.1
+    duration_s = 10.0
+    steps = int(duration_s / sample_time_s) + 1
+
+    # Stimulus parameters
     v_set = 20.0                     # driver‑set speed (m/s)
-    v_lead_initial = v_set + 5.0     # lead vehicle faster than set speed
-    d_initial = 200.0                # large gap to emulate absent lead
+    v_lead_initial = 30.0            # lead vehicle faster than set speed (m/s)
+    d_initial = 200.0                # large initial gap to emulate absent lead (m)
 
-    # Time vector
-    time = np.arange(0.0, duration_s + sample_time_s, sample_time_s).tolist()
-
-    # Initialise models
-    acc = ACCController(sample_time_s, dtype=dtype)
+    # ----------------------------------------------------------------------
+    # Instantiate DUT (controller) and plant model
+    # ----------------------------------------------------------------------
+    controller = ACCController(sample_time_s, dtype=dtype)
     plant = PlantModel(sample_time_s)
 
-    # Initialise state variables
-    v_ego = 0.0
-    v_lead = v_lead_initial
-    d_actual = d_initial
-
-    # Containers for signals
+    # ----------------------------------------------------------------------
+    # Containers for recorded signals
+    # ----------------------------------------------------------------------
+    time = []
     v_ego_hist = []
     v_lead_hist = []
     d_actual_hist = []
     a_cmd_hist = []
     mode_hist = []
-    d_safe_hist = []
+    d_safe_hist = []   # placeholder – will be filled with a simple gap estimate
 
-    for _ in time:
-        # ACC controller step
-        a_cmd, mode = acc.step(v_ego, v_lead, d_actual, v_set)
+    # Initial states
+    v_ego = 0.0
+    v_lead = v_lead_initial
+    d_actual = d_initial
 
-        # Plant dynamics step
+    # ----------------------------------------------------------------------
+    # Simulation loop
+    # ----------------------------------------------------------------------
+    for i in range(steps):
+        t = i * sample_time_s
+        time.append(t)
+
+        # Controller computes acceleration command and mode
+        a_cmd, mode = controller.step(v_ego, v_lead, d_actual, v_set)
+
+        # Plant updates ego dynamics and relative distance
         v_ego, x_ego, d_actual, v_lead = plant.step(a_cmd, v_lead)
-
-        # Simple safe‑distance estimate (used only for reporting)
-        d_safe = v_ego * 1.5 + 2.0
 
         # Record signals
         v_ego_hist.append(float(v_ego))
@@ -61,9 +70,14 @@ def run_acc_req_001(dtype='float64') -> dict:
         d_actual_hist.append(float(d_actual))
         a_cmd_hist.append(float(a_cmd))
         mode_hist.append(int(mode))
-        d_safe_hist.append(float(d_safe))
 
+        # Simple safe‑distance estimate (time‑gap of 2 s)
+        d_safe = float(v_ego) * 2.0
+        d_safe_hist.append(d_safe)
+
+    # ----------------------------------------------------------------------
     # Build signals dictionary expected by the oracle evaluator
+    # ----------------------------------------------------------------------
     signals = {
         'time': time,
         'v_ego': v_ego_hist,
@@ -74,26 +88,30 @@ def run_acc_req_001(dtype='float64') -> dict:
         'd_safe': d_safe_hist,
     }
 
-    # Oracle definition for tolerance band on v_ego after 5 s
+    # ----------------------------------------------------------------------
+    # Oracle definition (tolerance band on v_ego after 5 s)
+    # ----------------------------------------------------------------------
     oracle = {
         'type': 'tolerance_band',
         'evaluation_window_s': [5.0, 10.0],
         'signal': 'v_ego',
         'tolerance_mps': 0.5,
-        'set_point': v_set,
+        'reference': v_set,
     }
 
+    # ----------------------------------------------------------------------
     # Evaluate requirement
+    # ----------------------------------------------------------------------
     passed = evaluate_oracle(oracle, signals)
 
     details = (
-        f"Steady‑state speed tracking test: lead vehicle set to {v_lead_initial:.1f} m/s "
-        f"(faster than V_set={v_set:.1f} m/s). After 5 s the ego speed should stay within "
-        f"±0.5 m/s of V_set. Test {'passed' if passed else 'failed'}."
+        f"ACC-REQ-001 evaluated over {duration_s}s with sample time {sample_time_s}s. "
+        f"Ego speed settled to {v_ego_hist[-1]:.2f} m/s (set point {v_set} m/s). "
+        f"Requirement {'PASSED' if passed else 'FAILED'}."
     )
 
     return {
-        'requirement_id': requirement_id,
+        'requirement_id': 'ACC-REQ-001',
         'passed': bool(passed),
         'signals': signals,
         'details': details,

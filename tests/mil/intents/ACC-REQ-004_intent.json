@@ -9,10 +9,10 @@
     "parameters": {}
   },
   "oracle": {
-    "type": "tolerance_band",
+    "type": "lower_bound",
     "evaluation_window_s": [
-      0,
-      5
+      0.0,
+      5.0
     ],
     "signal": "a_cmd",
     "min_value": -3.0,
@@ -20,7 +20,6 @@
   },
   "metadata": {
     "generated_by": "groq/llama-3.3-70b-versatile",
-    "version": "1.0",
-    "notes": "Unconditional acceleration limit test"
+    "version": "1.0"
   }
 }

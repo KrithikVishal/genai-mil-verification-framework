@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "test_intent_schema.json",
+  "title": "MVP Test Intent",
+  "description": "Typed contract for one generated test intent in the autonomous MVP loop.",
+  "type": "object",
+  "required": [
+    "test_id",
+    "requirement_id",
+    "test_objective",
+    "stimulus",
+    "observed_signals",
+    "derived_metrics",
+    "oracle",
+    "duration_s",
+    "sample_time_s",
+    "assumptions",
+    "rationale",
+    "iteration",
+    "generated_by"
+  ],
+  "properties": {
+    "test_id": {
+      "type": "string",
+      "description": "Unique test identifier, e.g. ACC-REQ-001-T1-I1"
+    },
+    "requirement_id": {
+      "type": "string",
+      "pattern": "^ACC-REQ-[0-9]{3}$"
+    },
+    "test_objective": {
+      "type": "string",
+      "description": "One sentence describing what the test is verifying"
+    },
+    "stimulus": {
+      "type": "object",
+      "required": ["scenario_type", "initial_conditions", "events"],
+      "properties": {
+        "scenario_type": {
+          "type": "string",
+          "enum": ["steady_state", "step_change", "lead_deceleration", "cut_in", "boundary_sweep"]
+        },
+        "initial_conditions": {
+          "type": "object",
+          "required": ["v_ego_init_mps", "v_lead_init_mps", "d_init_m", "v_set_mps"],
+          "properties": {
+            "v_ego_init_mps":  {"type": "number", "minimum": 0, "maximum": 50},
+            "v_lead_init_mps": {"type": "number", "minimum": 0, "maximum": 100},
+            "d_init_m":        {"type": "number", "minimum": 5, "maximum": 200},
+            "v_set_mps":       {"type": "number", "minimum": 5, "maximum": 45}
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["time_s", "type"],
+            "properties": {
+              "time_s":        {"type": "number", "minimum": 0},
+              "type":          {"type": "string", "enum": ["lead_deceleration", "lead_absent", "none"]},
+              "decel_mps2":    {"type": "number"}
+            }
+          }
+        }
+      }
+    },
+    "observed_signals": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["v_ego", "v_lead", "d_actual", "a_cmd", "d_safe", "mode"]},
+      "minItems": 1
+    },
+    "derived_metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "formula", "unit"],
+        "properties": {
+          "name":    {"type": "string"},
+          "formula": {"type": "string"},
+          "unit":    {"type": "string"}
+        }
+      }
+    },
+    "oracle": {
+      "type": "object",
+      "required": ["type", "evaluation_window_start_s", "evaluation_window_end_s", "conditions"],
+      "properties": {
+        "type": {"type": "string", "enum": ["threshold", "range_bound", "formula_check", "timing"]},
+        "evaluation_window_start_s": {"type": "number", "minimum": 0},
+        "evaluation_window_end_s":   {"type": "number", "minimum": 0},
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["signal", "operator", "threshold"],
+            "properties": {
+              "signal": {
+                "type": "string",
+                "enum": ["v_ego", "v_lead", "d_actual", "a_cmd", "d_safe", "mode",
+                         "speed_error", "gap_surplus"],
+                "description": "speed_error = |v_ego - v_set|, gap_surplus = d_actual - d_safe"
+              },
+              "operator":  {"type": "string", "enum": ["<=", ">=", "==", "<", ">", "abs<="]},
+              "threshold": {"type": "number"}
+            }
+          }
+        }
+      }
+    },
+    "duration_s":       {"type": "number", "minimum": 1, "maximum": 60},
+    "sample_time_s":    {"type": "number", "minimum": 0.01, "maximum": 1.0},
+    "assumptions":      {"type": "array", "items": {"type": "string"}},
+    "rationale":        {"type": "string", "description": "Explanation of how this test exercises the requirement"},
+    "iteration":        {"type": "integer", "minimum": 1},
+    "generated_by":     {"type": "string"}
+  }
+}

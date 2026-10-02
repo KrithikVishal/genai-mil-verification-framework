@@ -4,7 +4,7 @@
   "category": "distance_formula",
   "stimulus": {
     "type": "steady_state",
-    "duration_s": 1.0,
+    "duration_s": 2.0,
     "sample_time_s": 0.1,
     "parameters": {
       "v_set_mps": 20.0
@@ -13,15 +13,15 @@
   "oracle": {
     "type": "tolerance_band",
     "evaluation_window_s": [
-      0,
-      1
+      0.0,
+      2.0
     ],
     "signal": "d_safe",
-    "tolerance_mps": 0.1
+    "tolerance_mps": 0.01
   },
   "metadata": {
     "generated_by": "groq/llama-3.3-70b-versatile",
     "version": "1.0",
-    "notes": "Unconditional requirement test for D_safe formula"
+    "notes": "Derived from distance formula requirement"
   }
 }

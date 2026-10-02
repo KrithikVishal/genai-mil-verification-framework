@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-10-02T09:12:39Z",
+  "requirement_id": "ACC-REQ-001",
+  "requirement_text": "WHEN the lead vehicle is absent or travelling faster than the set speed, the ACC system shall maintain ego-vehicle speed within \u00b10.5 m/s of the driver-set speed V_set in steady-state conditions (settled after 5 s).",
+  "final_verdict": "PASS",
+  "total_iterations": 3,
+  "final_iteration": 3,
+  "final_quality": "GOOD",
+  "stopped_because": "Max iterations (3) reached.",
+  "confidence": 0.99,
+  "iterations": [
+    {
+      "iteration": 1,
+      "test_id": "ACC-REQ-001-T1-I1",
+      "verdict": "PASS",
+      "quality": "ADEQUATE",
+      "stop_loop": false,
+      "metrics": {
+        "max_speed_error_mps": 0,
+        "rms_speed_error_mps": 0,
+        "min_gap_surplus_m": 62,
+        "a_cmd_min_mps2": 0,
+        "a_cmd_max_mps2": 0
+      },
+      "gaps": [
+        "Neither d_safe, d_actual, nor gap_surplus is in observed_signals or oracle \u2014 safe-distance oracle is untestable.",
+        "Speed error is near zero throughout \u2014 initial conditions may be too close to steady state. Consider starting further from set-point."
+      ]
+    },
+    {
+      "iteration": 2,
+      "test_id": "ACC-REQ-001-T1-I2",
+      "verdict": "FAIL",
+      "quality": "ADEQUATE",
+      "stop_loop": false,
+      "metrics": {
+        "max_speed_error_mps": 0.39776102794836987,
+        "rms_speed_error_mps": 0.08056565033870244,
+        "min_gap_surplus_m": 11.601119486025823,
+        "a_cmd_min_mps2": 5.646378031798349e-07,
+        "a_cmd_max_mps2": 2
+      },
+      "gaps": []
+    },
+    {
+      "iteration": 3,
+      "test_id": "ACC-REQ-001-T1-I3",
+      "verdict": "PASS",
+      "quality": "GOOD",
+      "stop_loop": true,
+      "metrics": {
+        "max_speed_error_mps": 0.010971717062737696,
+        "rms_speed_error_mps": 0.002099874192154895,
+        "min_gap_surplus_m": 11.794514141468404,
+        "a_cmd_min_mps2": 3.3429543577767618e-09,
+        "a_cmd_max_mps2": 2
+      },
+      "gaps": []
+    }
+  ]
+}

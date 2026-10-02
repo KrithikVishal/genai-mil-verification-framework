@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "execution_result_schema.json",
+  "title": "MVP Execution Result",
+  "description": "Machine-readable evidence returned by the MATLAB runner after executing a test.",
+  "type": "object",
+  "required": [
+    "test_id",
+    "run_id",
+    "requirement_id",
+    "execution_status",
+    "requirement_verdict",
+    "measured_metrics",
+    "warnings",
+    "errors",
+    "model_info",
+    "budget_used"
+  ],
+  "properties": {
+    "test_id":          {"type": "string"},
+    "run_id":           {"type": "string"},
+    "requirement_id":   {"type": "string"},
+    "execution_status": {"type": "string", "enum": ["success", "runtime_error", "config_error", "timeout"]},
+    "requirement_verdict": {"type": "string", "enum": ["PASS", "FAIL", "BOUNDARY", "UNCERTAIN", "ERROR"]},
+    "measured_metrics": {
+      "type": "object",
+      "description": "Key metric name mapped to measured value",
+      "additionalProperties": {"type": "number"}
+    },
+    "signal_traces": {
+      "type": "object",
+      "description": "Optional signal arrays for diagnosis",
+      "additionalProperties": {"type": "array", "items": {"type": "number"}}
+    },
+    "warnings":  {"type": "array", "items": {"type": "string"}},
+    "errors":    {"type": "array", "items": {"type": "string"}},
+    "model_info": {
+      "type": "object",
+      "properties": {
+        "controller": {"type": "string"},
+        "plant":      {"type": "string"},
+        "matlab_version": {"type": "string"}
+      }
+    },
+    "budget_used": {
+      "type": "object",
+      "properties": {
+        "wall_time_s":  {"type": "number"},
+        "iteration":    {"type": "integer"}
+      }
+    }
+  }
+}

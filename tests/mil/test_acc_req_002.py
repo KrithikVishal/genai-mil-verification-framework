@@ -12,79 +12,80 @@ from src.models.plant_model import PlantModel
 from src.utils.signal_metrics import evaluate_oracle
 
 def run_acc_req_002(dtype='float64') -> dict:
-    # Simulation parameters
-    sample_time = 0.1
-    duration = 15.0
-    steps = int(duration / sample_time) + 1
+    import numpy as np
+    from src.models.acc_controller import ACCController
+    from src.models.plant_model import PlantModel
+    from src.utils.signal_metrics import evaluate_oracle
+
+    # Requirement metadata
+    requirement_id = "ACC-REQ-002"
 
     # Stimulus parameters
-    v_set = 30.0                     # desired ego speed (m/s)
-    v_lead_initial = 30.0            # lead initial speed (m/s)
-    v_lead_final = 15.0              # lead final speed (m/s)
-    lead_decel = -3.0                # lead deceleration (m/s^2)
-    event_time = 2.0                 # time when lead starts decelerating (s)
-    d_initial = 45.0                 # initial distance (m)
+    sample_time_s = 0.1
+    duration_s = 15.0
+    v_set = 30.0                     # m/s desired ego speed
+    v_lead_initial = 30.0            # m/s
+    v_lead_final = 15.0              # m/s
+    d_initial = 45.0                 # m initial gap
+    lead_decel = -3.0                # m/s^2 (negative)
+    event_time = 2.0                 # s when lead starts decelerating
 
-    # Initial states
-    v_ego = v_set
-    d_actual = d_initial
+    # Time vector
+    times = np.arange(0.0, duration_s + sample_time_s, sample_time_s)
 
     # Instantiate models
-    acc = ACCController(sample_time, dtype=dtype)
-    plant = PlantModel(sample_time)
+    acc = ACCController(sample_time_s, dtype=dtype)
+    plant = PlantModel(sample_time_s)
 
-    # Containers for signals
-    time_list = []
-    v_ego_list = []
-    v_lead_list = []
-    d_actual_list = []
-    a_cmd_list = []
-    mode_list = []
-    d_safe_list = []
+    # Initialise state variables
+    v_ego = v_set                     # start at set speed
+    d_actual = d_initial
+    # Lists to collect signals
+    v_ego_hist = []
+    v_lead_hist = []
+    d_actual_hist = []
+    a_cmd_hist = []
+    mode_hist = []
+    d_safe_hist = []
 
-    for i in range(steps):
-        t = i * sample_time
-
-        # Lead vehicle speed profile
-        if t >= event_time:
-            v_lead = max(v_lead_final,
-                         v_lead_initial + lead_decel * (t - event_time))
-        else:
+    for t in times:
+        # Determine lead vehicle speed profile
+        if t < event_time:
             v_lead = v_lead_initial
+        else:
+            v_lead = v_lead_initial + lead_decel * (t - event_time)
+            if v_lead < v_lead_final:
+                v_lead = v_lead_final
 
         # ACC controller computes command
         a_cmd, mode = acc.step(v_ego, v_lead, d_actual, v_set)
 
-        # Plant updates ego state (and returns updated lead speed, ignored here)
+        # Plant updates ego dynamics and gap
         v_ego, x_ego, d_actual, _ = plant.step(a_cmd, v_lead)
 
-        # Simple safe distance model (time gap 1.5 s + 2 m stand‑still buffer)
-        d_safe = v_ego * 1.5 + 2.0
+        # Simple safe distance model: 2‑second headway
+        d_safe = max(0.0, v_ego * 2.0)
 
         # Record signals
-        time_list.append(t)
-        v_ego_list.append(float(v_ego))
-        v_lead_list.append(float(v_lead))
-        d_actual_list.append(float(d_actual))
-        a_cmd_list.append(float(a_cmd))
-        # mode may be enum/int/array; store as int if possible
-        try:
-            mode_val = int(mode)
-        except Exception:
-            mode_val = mode
-        mode_list.append(mode_val)
-        d_safe_list.append(float(d_safe))
+        v_ego_hist.append(float(v_ego))
+        v_lead_hist.append(float(v_lead))
+        d_actual_hist.append(float(d_actual))
+        a_cmd_hist.append(float(a_cmd))
+        mode_hist.append(int(mode) if not isinstance(mode, np.generic) else int(mode))
+        d_safe_hist.append(float(d_safe))
 
+    # Build signals dictionary for oracle evaluation
     signals = {
-        'time': time_list,
-        'v_ego': v_ego_list,
-        'v_lead': v_lead_list,
-        'd_actual': d_actual_list,
-        'a_cmd': a_cmd_list,
-        'mode': mode_list,
-        'd_safe': d_safe_list,
+        'time': times.tolist(),
+        'v_ego': v_ego_hist,
+        'v_lead': v_lead_hist,
+        'd_actual': d_actual_hist,
+        'a_cmd': a_cmd_hist,
+        'mode': mode_hist,
+        'd_safe': d_safe_hist,
     }
 
+    # Oracle definition
     oracle = {
         'type': 'lower_bound',
         'signal': 'd_actual',
@@ -92,15 +93,16 @@ def run_acc_req_002(dtype='float64') -> dict:
         'reference_signal': 'd_safe',
     }
 
+    # Evaluate requirement
     passed = evaluate_oracle(oracle, signals)
 
     details = (
-        f"Requirement ACC-REQ-002 {'passed' if passed else 'failed'}: "
-        f"d_actual {'≥' if passed else '<'} d_safe over the evaluation window (5‑15 s)."
+        f"Requirement {requirement_id} evaluated over {duration_s}s. "
+        f"Safe distance maintained: {'PASS' if passed else 'FAIL'}."
     )
 
     return {
-        'requirement_id': 'ACC-REQ-002',
+        'requirement_id': requirement_id,
         'passed': passed,
         'signals': signals,
         'details': details,
